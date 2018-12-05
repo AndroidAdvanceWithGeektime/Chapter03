@@ -94,4 +94,6 @@ Thanks
 
 Substrate 一款经典的 hook 框架
 
-fbjni 是从 Facebook 的一个开源库中扒出来的，主要提供了工具类，ref utils ，Global JniEnv。
+[fbjni](https://github.com/facebookincubator/profilo/tree/master/deps/fbjni) 是从 Facebook 开源的一款jni工具类库，主要提供了工具类，ref utils ，Global JniEnv。
+
+[ndk_dlopen](https://github.com/rrrfff/ndk_dlopen) 提供了force dlopen 机制
