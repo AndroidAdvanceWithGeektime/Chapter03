@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include <ctime>
 #include <cstdlib>
-#include "runtime.h"
+#include "fb/fbjni/fbjni.h"
 
 pthread_t pthread_self(void);
 
