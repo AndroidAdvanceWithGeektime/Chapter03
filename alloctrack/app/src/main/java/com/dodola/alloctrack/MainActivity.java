@@ -5,12 +5,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
 public class MainActivity extends AppCompatActivity {
-    static AllocTracker tracker;
-
-    static {
-
-
-    }
+    static AllocTracker tracker = new AllocTracker();
 
 
     @Override
@@ -18,10 +13,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        tracker = new AllocTracker();
         tracker.setSaveDataDirectory(getFilesDir().getAbsolutePath());
-        tracker.initForArt(BuildConfig.VERSION_CODE, 1000);
-//        tracker.startAllocationTracker();
+        tracker.initForArt(BuildConfig.VERSION_CODE, 5000);
         findViewById(R.id.btn_start).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -44,9 +37,5 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    /**
-     * A native method that is implemented by the 'native-lib' native library,
-     * which is packaged with this application.
-     */
     public native String stringFromJNI();
 }
