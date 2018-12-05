@@ -7,10 +7,12 @@
 我们可以在它基础上做很多自定义的操作：
 1. 追踪Bitmap的创建堆栈；
 2. 追踪线程的创建堆栈；
-3. 追踪特定对象的生命周期；
+3. 追踪特定对象的分配；
 4. ...
 
 在后面我们也会有大量的这些例子，只要充分清楚底层原理，我们可以做到事情还是很多的。
+
+**在高版本 Android Profiler 使用了新的方法来实现 Allocation Tracker，这块我们后面在的章节会给出新的实现。**
 
 开发环境
 =======
@@ -20,7 +22,7 @@ NDK 16~19
 运行环境
 ======
 项目支持Dalvik 和 Art 虚拟机，理论上兼容了4.0~8.1的机型，但只在7.1和8.0上实测过。
-由于国内机型的差异化，无 法适配所有机型，项目只做展示原理使用，并不稳定。
+由于国内机型的差异化，无法适配所有机型，项目只做展示原理使用，并不稳定。
 
 使用方式
 ======
@@ -42,9 +44,12 @@ com.dodola.alloctrack I/AllocTracker: saveARTAllocationData write file to /data/
 
 4. 数据解析。采集下来的数据无法直接通过编辑器打开，需要通过 dumpprinter 工具来进行解析，操作如下
 ```
-//dump 工具存放在tools/dumper.jar 中
+dump 工具存放在tools/DumpPrinter-1.0.jar 中
+
+可以通过 gradle task :buildAlloctracker.jar编译
+
 //调用方法：
-java -jar tools/dumper.jar dump文件路径 > dump_log.txt
+java -jar tools/DumpPrinter-1.0.jar dump文件路径 > dump_log.txt
 ```
 
 5. 然后就可以在 `dump_log.txt` 中看到解析出来的数据
@@ -81,6 +86,7 @@ tid=7205 java.lang.Class (4144 bytes)//当前线程  类名  分配的大小
 1. 阅读源码。各个ROM版本的实现有所差异，我们需要在各个版本上面找到合适的 Hook 点。这里需要我们对整个流程和原理都比较清楚。
 2. 选择合适的框架。需要对各种Hook框架有清楚的认识，如何选择，如何使用。
 
+这套方案的确有点复杂，Android Profiler 换了新的实现方案。整体实现会简单很多，后续也会给出实现。
 
 Thanks
 ======
