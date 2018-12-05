@@ -106,8 +106,6 @@ static bool newArtRecordAllocationDoing24(void *, Class *type, size_t byte_count
 static void (*oldArtRecordAllocation23)(Thread *, Class *, size_t);
 static void newArtRecordAllocation23(Thread *self, Class *type, size_t byte_count) {
     if (needStopRecord) {
-        //LOGI(ALLOC_TRACKER_TAG, "needStopRecord, ignore");
-        //newArtRecordAllocationDoing23(self, type, byte_count);
         return;
     } else {
         if (newArtRecordAllocationDoing(type, byte_count)) {
@@ -118,8 +116,6 @@ static void newArtRecordAllocation23(Thread *self, Class *type, size_t byte_coun
 static void (*oldArtRecordAllocation22)(Class *, size_t);
 static void newArtRecordAllocation22(Class *type, size_t byte_count) {
     if (needStopRecord) {
-        //LOGI(ALLOC_TRACKER_TAG, "needStopRecord, ignore");
-        //newArtRecordAllocationDoing22(type, byte_count);
         return;
     } else {
         if (newArtRecordAllocationDoing(type, byte_count)) {

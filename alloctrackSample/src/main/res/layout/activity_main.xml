@@ -10,6 +10,7 @@
         android:id="@+id/gen_obj"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:enabled="false"
         android:text="输出内存 Dump 到日志" />
 
     <Button

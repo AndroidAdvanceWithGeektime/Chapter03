@@ -46,10 +46,11 @@ JNI_METHOD_DECL(void, stopAllocationTracker)
 }
 
 void beforeRecordAllocation(RegisterContext *reg_ctx, const HookEntryInfo *info) {
-    int objptr = Read4(reg_ctx->general.regs.r2);
-    int classRef = Read4(objptr);
+    int objptr = Read4(reg_ctx->general.regs.r2);//此处获取的其实是一个 ref 对象
+    int classRef = Read4(objptr);//根据 ref 获取真实的对象地址
     //r3是 bytecount
     //r0寄存器是 this
+    //r2是 class
     newArtRecordAllocationDoing24((void *) reg_ctx->general.regs.r0,
                                   reinterpret_cast<Class *>(classRef),
                                   reg_ctx->general.regs.r3);
@@ -77,6 +78,9 @@ void hookFunc() {
 
     void *hookRecordAllocation22 = ndk_dlsym(handle,
                                              "_ZN3art3Dbg16RecordAllocationEPNS_6mirror5ClassEj");
+
+    //此处说明一下26和24版本需要使用 hookzz 的原因。
+    //hookzz 框架有个优势是可以获取方法进入时候的寄存器内容，而很多时候我们要根据r0来获取 this
     if (hookRecordAllocation26 != nullptr) {
         LOGI("Finish get symbol26");
         ZzWrap((void *) hookRecordAllocation26, beforeRecordAllocation, nullptr);
@@ -105,6 +109,8 @@ void hookFunc() {
 
 /**
  * art 初始化
+ * apilevel 系统版本
+ * allocRecordmax是对象分配数量的最大值
  */
 JNI_METHOD_DECL(jint, initForArt)
 (JNIEnv *env, jobject jref, jint apiLevel, jint allocRecordMax) {
@@ -125,23 +131,23 @@ JNI_METHOD_DECL(jint, initForArt)
 
     if (GetDescriptor == nullptr) {
         GetDescriptor = (char *(*)(Class *, std::string *)) ndk_dlsym(libHandle,
-                                                                      "_ZN3art6mirror5Class13GetDescriptorEPNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE");
+                                                                      "_ZN3art6mirror5Class13GetDescriptorEPNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE");//根据 class 获取类名
     }
 
     artSetAllocTrackingEnable = (void (*)(bool)) ndk_dlsym(libHandle,
-                                                           "_ZN3art3Dbg23SetAllocTrackingEnabledEb");
+                                                           "_ZN3art3Dbg23SetAllocTrackingEnabledEb");//开启 alloc tracking 开启成功后才能执行后续操作
 
 
     if (artSetAllocTrackingEnable == nullptr) {
         LOGI("find artSetAllocTrackingEnable failed");
     }
     artGetRecentAllocations = (jbyteArray(*)()) ndk_dlsym(libHandle,
-                                                          "_ZN3art3Dbg20GetRecentAllocationsEv");
+                                                          "_ZN3art3Dbg20GetRecentAllocationsEv");//重要方法，dump alloc 里的对象转换成 byte 数据
     if (artGetRecentAllocations == nullptr) {
         LOGI("find artGetRecentAllocations failed");
     }
     artAllocMapClear = (bool (*)(void *)) (ndk_dlsym(libHandle,
-                                                     "_ZN3art2gc20AllocRecordObjectMap5ClearEv"));
+                                                     "_ZN3art2gc20AllocRecordObjectMap5ClearEv"));//清理 alloc 中已存在的对象
     if (artAllocMapClear == nullptr) {
         LOGI("find artAllocMapClear failed");
     }
@@ -275,13 +281,7 @@ static void resetARTAllocRecord() {
  */
 jbyteArray getARTAllocationData() {
     if (artGetRecentAllocations != NULL) {
-//        int *allocRecordCount = (int *) ndk_dlsym(libHandle, "_ZN3art3Dbg19alloc_record_count_E");
-//        int *allocRecordHead = (int *) ndk_dlsym(libHandle, "_ZN3art3Dbg18alloc_record_head_E");
-//        if (allocRecordCount != NULL && allocRecordHead != NULL) {
-//            LOGI(ALLOC_TRACKER_TAG,
-//                 "getAllocationData, use art, allocRecordCount: %d, allocRecordHead: %d, setAllocRecordMax: %s",
-//                 *allocRecordCount, *allocRecordHead, setAllocRecordMax);
-//        }
+
         jbyteArray data = artGetRecentAllocations();
         LOGI("artGetRecentAllocations finished");
         if (data != NULL) {
@@ -436,35 +436,46 @@ static bool newArtRecordAllocationDoing(Class *type, size_t byte_count) {
     allocObjectCount++;
 
     char *typeName = GetDescriptor(type, &a);
-//    LOGI("=====class name:%s,allocbyte:%d", typeName,byte_count);//
+//    LOGI("=====class name:%s,allocbyte:%d", typeName,byte_count);// 如果只关心分配的对象大小的话，可以不用做alloc dump 的操作
     //达到 max
     int randret = randomInt(0, 100);
     if (randret == LUCKY) {
         LOGI("====current alloc count %d=====", allocObjectCount.load());
         return false;
     }
-//    int artAllocMax = getARTAllocRecordMax();
     if (allocObjectCount > setAllocRecordMax) {
-        CMyLock lock(g_Lock);
+        CMyLock lock(g_Lock);//此处需要 loc 因为对象分配的时候不知道在哪个线程，不 lock 会导致重复 dump
         allocObjectCount = 0;
 
         //write alloc data to file
         jbyteArray allocData = getARTAllocationData();
         SaveAllocationData saveData{allocData};
         saveARTAllocationData(saveData);
-        //TODO:clear alloc data
         resetARTAllocRecord();
+        LOGI("===========CLEAR ALLOC MAPS=============");
+
         lock.Unlock();
     }
     return true;
 }
 
+/**
+ * 24以上版本和以下版本上由于 alloc list 的结构不同导致调用方式也不同
+ * @param _this
+ * @param type
+ * @param byte_count
+ * @return
+ */
 static bool newArtRecordAllocationDoing24(void *_this, Class *type, size_t byte_count) {
+
+    if (artAllocMapClear == nullptr) {//如果无法主动 clear 对象，那么下面的逻辑会导致 dump 下来的对象重复
+        return false;
+    }
 
     allocObjectCount++;
 
     char *typeName = GetDescriptor(type, &a);
-//    LOGI("=====class name:%s,allocbyte:%d", typeName,byte_count);//
+//    LOGI("=====class name:%s,allocbyte:%d", typeName,byte_count);// 如果只关心分配的对象大小的话，可以不用做alloc dump 的操作
     //达到 max
     int randret = randomInt(0, 100);
     if (randret == LUCKY) {
