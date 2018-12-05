@@ -70,6 +70,8 @@ tid=7205 java.lang.Class (4144 bytes)//当前线程  类名  分配的大小
 
 Thanks
 ======
-[HookZZ](https://github.com/jmpews/HookZz)
-Substrate
-fbjni
+[HookZZ](https://github.com/jmpews/HookZz) 一款优秀的 inline hook 框架
+
+Substrate 一款经典的 hook 框架
+
+fbjni 主要提供了工具类，ref utils ，Global JniEnv 
