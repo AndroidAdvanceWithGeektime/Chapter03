@@ -42,7 +42,7 @@ com.dodola.alloctrack I/AllocTracker: saveARTAllocationData write file to /data/
 ```
 
 
-3. 数据会保存在 `/data/data/com.dodola/alloctrack/files`目录下
+3. 数据会保存在 `/data/data/com.dodola.alloctrack/files`目录下
 
 4. 数据解析。采集下来的数据无法直接通过编辑器打开，需要通过 dumpprinter 工具来进行解析，操作如下
 ```
