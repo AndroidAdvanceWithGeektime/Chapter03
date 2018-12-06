@@ -11,7 +11,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -Wno-unused -Wno-gnu-aligno
 # Gradle automatically packages shared libraries with your APK.
 add_subdirectory(fb)
 add_subdirectory(Substrate)
-add_subdirectory(HookZz)
+#add_subdirectory(HookZz)
 
 include_directories(fb)
 add_library( # Sets the name of the library.
@@ -41,4 +41,4 @@ find_library( # Sets the name of the path variable.
 
 target_link_libraries( # Specifies the target library.
         alloc-lib
-        ${log-lib} substrate fbjni hookzz)
+        ${log-lib} substrate fbjni)

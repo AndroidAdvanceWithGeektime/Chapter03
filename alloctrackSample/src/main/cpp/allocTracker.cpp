@@ -2,7 +2,7 @@
 #include "alloctracker.h"
 #include "dlopen.h"
 #include "Substrate/SubstrateHook.h"
-#include "HookZz/include/hookzz.h"
+//#include "HookZz/include/hookzz.h"
 #include <pthread.h>
 #include <ctime>
 #include <cstdlib>
@@ -45,16 +45,16 @@ JNI_METHOD_DECL(void, stopAllocationTracker)
     }
 }
 
-void beforeRecordAllocation(RegisterContext *reg_ctx, const HookEntryInfo *info) {
-    int objptr = Read4(reg_ctx->general.regs.r2);//此处获取的其实是一个 ref 对象
-    int classRef = Read4(objptr);//根据 ref 获取真实的对象地址
-    //r3是 bytecount
-    //r0寄存器是 this
-    //r2是 class
-    newArtRecordAllocationDoing24((void *) reg_ctx->general.regs.r0,
-                                  reinterpret_cast<Class *>(classRef),
-                                  reg_ctx->general.regs.r3);
-}
+//void beforeRecordAllocation(RegisterContext *reg_ctx, const HookEntryInfo *info) {
+//    int objptr = Read4(reg_ctx->general.regs.r2);//此处获取的其实是一个 ref 对象
+//    int classRef = Read4(objptr);//根据 ref 获取真实的对象地址
+//    //r3是 bytecount
+//    //r0寄存器是 this
+//    //r2是 class
+//    newArtRecordAllocationDoing24((void *) reg_ctx->general.regs.r0,
+//                                  reinterpret_cast<Class *>(classRef),
+//                                  reg_ctx->general.regs.r3);
+//}
 
 /// methods for art
 //force dlopen 需要等待 env 构造完成
@@ -83,11 +83,15 @@ void hookFunc() {
     //hookzz 框架有个优势是可以获取方法进入时候的寄存器内容，而很多时候我们要根据r0来获取 this
     if (hookRecordAllocation26 != nullptr) {
         LOGI("Finish get symbol26");
-        ZzWrap((void *) hookRecordAllocation26, beforeRecordAllocation, nullptr);
+//        ZzWrap((void *) hookRecordAllocation26, beforeRecordAllocation, nullptr);
+        MSHookFunction(hookRecordAllocation26, (void *) &newArtRecordAllocation26,
+                       (void **) &oldArtRecordAllocation26);
 
     } else if (hookRecordAllocation24 != nullptr) {
         LOGI("Finish get symbol24");
-        ZzWrap((void *) hookRecordAllocation24, beforeRecordAllocation, nullptr);
+//        ZzWrap((void *) hookRecordAllocation24, beforeRecordAllocation, nullptr);
+        MSHookFunction(hookRecordAllocation26, (void *) &newArtRecordAllocation26,
+                       (void **) &oldArtRecordAllocation26);
 
     } else if (hookRecordAllocation23 != NULL) {
         LOGI("Finish get symbol23");

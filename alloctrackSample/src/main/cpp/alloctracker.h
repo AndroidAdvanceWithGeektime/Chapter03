@@ -103,6 +103,22 @@ static const char *storeDataDirectory;
 static bool newArtRecordAllocationDoing(Class *type, size_t byte_count);
 static bool newArtRecordAllocationDoing24(void *, Class *type, size_t byte_count);
 
+//RecordAllocation(Thread* self,
+//266                                            ObjPtr<mirror::Object>* obj,
+//267                                            size_t byte_count)
+static void (*oldArtRecordAllocation26)(void *_this, Thread *, void *obj, size_t);
+static void newArtRecordAllocation26(void *_this, Thread *self, void *obj, size_t byte_count) {
+    if (needStopRecord) {
+        return;
+    } else {
+        int objptr = Read4(reinterpret_cast<uintptr_t>(obj));//此处获取的其实是一个 ref 对象
+        int classRef = Read4(objptr);//根据 ref 获取真实的对象地址
+        newArtRecordAllocationDoing24(_this, reinterpret_cast<Class *>(classRef), byte_count);
+        oldArtRecordAllocation26(_this, self, obj, byte_count);
+    }
+}
+
+
 static void (*oldArtRecordAllocation23)(Thread *, Class *, size_t);
 static void newArtRecordAllocation23(Thread *self, Class *type, size_t byte_count) {
     if (needStopRecord) {
